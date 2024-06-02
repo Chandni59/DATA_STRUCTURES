@@ -1,0 +1,157 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+struct Node {
+    int coeff;
+    int exp;
+    struct Node *next;
+}*poly1 = NULL, *poly2 = NULL, *result = NULL;
+
+void create(struct Node **poly) {
+    struct Node *t, *last = NULL;
+    int num, i;
+
+    printf("Enter number of terms: ");
+    scanf("%d", &num);
+    printf("Enter each term with coeff and exp:\n");
+
+    for (i = 0; i < num; i++) {
+        t = (struct Node *)malloc(sizeof(struct Node));
+        scanf("%d%d", &t->coeff, &t->exp);
+        t->next = NULL;
+        if (*poly == NULL) {
+            *poly = last = t;
+        } else {
+            last->next = t;
+            last = t;
+        }
+    }
+}
+
+void display(struct Node *p) {
+    printf("%dx%d ", p->coeff, p->exp);
+    p = p->next;
+
+    while (p) {
+        printf("+ %dx%d ", p->coeff, p->exp);
+        p = p->next;
+    }
+    printf("\n");
+}
+
+void insertTerm(struct Node **poly, int coeff, int exp) {
+    struct Node *newTerm = (struct Node *)malloc(sizeof(struct Node));
+    if (newTerm == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+    newTerm->coeff = coeff;
+    newTerm->exp = exp;
+    newTerm->next = NULL;
+
+    if (*poly == NULL) {
+        *poly = newTerm;
+    } else {
+        struct Node *temp = *poly;
+        while (temp->next != NULL) {
+            temp = temp->next;
+        }
+        temp->next = newTerm;
+    }
+}
+
+struct Node *addPolynomials(struct Node *poly1, struct Node *poly2) {
+    struct Node *result = NULL;
+    while (poly1 != NULL && poly2 != NULL) {
+        if (poly1->exp > poly2->exp) {
+            insertTerm(&result, poly1->coeff, poly1->exp);
+            poly1 = poly1->next;
+        } else if (poly1->exp < poly2->exp) {
+            insertTerm(&result, poly2->coeff, poly2->exp);
+            poly2 = poly2->next;
+        } else {
+            int sum = poly1->coeff + poly2->coeff;
+            if (sum != 0) {
+                insertTerm(&result, sum, poly1->exp);
+            }
+            poly1 = poly1->next;
+            poly2 = poly2->next;
+        }
+    }
+    while (poly1 != NULL) {
+        insertTerm(&result, poly1->coeff, poly1->exp);
+        poly1 = poly1->next;
+    }
+    while (poly2 != NULL) {
+        insertTerm(&result, poly2->coeff, poly2->exp);
+        poly2 = poly2->next;
+    }
+    return result;
+}
+
+struct Node *subtractPolynomials(struct Node *poly1, struct Node *poly2) {
+    struct Node *negPoly2 = NULL;
+    while (poly2 != NULL) {
+        insertTerm(&negPoly2, -poly2->coeff, poly2->exp);
+        poly2 = poly2->next;
+    }
+    struct Node *result = addPolynomials(poly1, negPoly2);
+    free(negPoly2);
+    return result;
+}
+
+struct Node *multiplyPolynomials(struct Node *poly1, struct Node *poly2) {
+    struct Node *result = NULL;
+    while (poly1 != NULL) {
+        struct Node *temp = poly2;
+        while (temp != NULL) {
+            int coeff = poly1->coeff * temp->coeff;
+            int exp = poly1->exp + temp->exp;
+            insertTerm(&result, coeff, exp);
+            temp = temp->next;
+        }
+        poly1 = poly1->next;
+    }
+    return result;
+}
+
+long evaluate(struct Node *p, int x) {
+    long val = 0;
+    while (p) {
+        val += p->coeff * pow(x, p->exp);
+        p = p->next;
+    }
+    return val;
+}
+
+int main() {
+    int x;
+    printf("Enter polynomial 1:\n");
+    create(&poly1);
+    printf("Polynomial 1: ");
+    display(poly1);
+
+    printf("Enter polynomial 2:\n");
+    create(&poly2);
+    printf("Polynomial 2: ");
+    display(poly2);
+
+    result = addPolynomials(poly1, poly2);
+    printf("Addition Result: ");
+    display(result);
+
+    result = subtractPolynomials(poly1, poly2);
+    printf("Subtraction Result: ");
+    display(result);
+
+    result = multiplyPolynomials(poly1, poly2);
+    printf("Multiplication Result: ");
+    display(result);
+
+    printf("Enter value of x: ");
+    scanf("%d", &x);
+    printf("Evaluation of Polynomial 1 at x=%d: %ld\n", x, evaluate(poly1, x));
+    printf("Evaluation of Polynomial 2 at x=%d: %ld\n", x, evaluate(poly2, x));
+
+    return 0;
